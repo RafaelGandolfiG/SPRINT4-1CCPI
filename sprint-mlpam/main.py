@@ -1,3 +1,11 @@
+# Integrantes:
+# Rafael Gandolfi Gonçalves-569036
+# Rafael Lins-570588
+# Cauã Paes-569906
+# Guilherme Miranda-573107
+# Carlos Eduardo-572949
+# João Pedro Soler-569725
+
 # Setup
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
