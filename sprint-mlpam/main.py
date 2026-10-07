@@ -13,7 +13,7 @@ from sklearn.preprocessing import LabelEncoder
 # 1a -
 
 # carregar o csv em um DataFrame
-df = pd.read_csv(r"C:\Users\Rafael\Documents\SPRINT4-1CCPI\sprint-mlpam\Renewable_Energy_Data.csv")
+df = pd.read_csv("Renewable_Energy_Data.csv")
 
 print("\n==========DataFrame completo==========\n")
 print(df)
