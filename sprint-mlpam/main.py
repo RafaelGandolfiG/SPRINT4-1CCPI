@@ -1,278 +1,179 @@
+# 2º SEMESTRE - CHALLENGE SPRINT 4
 # Integrantes:
-# Rafael Gandolfi Gonçalves-569036
-# Rafael Lins-570588
-# Cauã Paes-569906
-# Guilherme Miranda-573107
-# Carlos Eduardo-572949
-# João Pedro Soler-569725
+# Rafael Gandolfi Gonçalves - RM 569036
+# Rafael Lins - RM 570588
+# Cauã Paes - RM 569906
+# Guilherme Miranda - RM 573107
+# Carlos Eduardo - RM 572949
+# João Pedro Soler - RM 569725
 
-# Setup
+# Bibliotecas utilizadas nas aulas e complementos necessários ao enunciado.
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-
-# 1a -
-
-# carregar o csv em um DataFrame
-df = pd.read_csv("Renewable_Energy_Data.csv")
-
-print("\n==========DataFrame completo==========\n")
-print(df)
-
-# 1b -
-
-# encoding do target (Energy_Class) para uma variável numérica
-df["Energy_Class"] = df["Energy_Class"].map({"Low": 0, "Medium": 1, "High": 2})
-
-# Encoding das outras colunas categóricas
-encoder = LabelEncoder()
-
-# Region: East = 0, North = 1, South = 2, West = 3
-df["Region"] = encoder.fit_transform(df["Region"])
-
-# Energy_Source: Hydro = 0, Solar = 1, Wind = 2
-df["Energy_Source"] = encoder.fit_transform(df["Energy_Source"])
-
-# Season: Autumn = 0, Spring = 1, Summer = 2, Winter = 3
-df["Season"] = encoder.fit_transform(df["Season"])
-
-print("\n==========Tabela depois dos encodings==========\n")
-print(df)
-
-# 1c -
-
-# matriz de correlação entre todas as colunas
-correlacao = df.corr()
-
-print("\n==========Matriz de Correlação==========\n")
-print(correlacao)
-
-# 1d -
-
-# Com base na matriz de correlação, optamos por utilizar todas as features
-# para realizar a classificação. A variável que apresentou a maior correlação
-# com Energy_Class foi Efficiency_Ratio, com aproximadamente 0.21.
-#
-# Entretanto, esse valor ainda representa uma correlação relativamente baixa,
-# enquanto as demais features apresentaram correlações ainda mais próximas de 0.
-#
-# Dessa forma, não existe um pequeno conjunto de features que se destaque
-# claramente pela correlação com Energy_Class. Por esse motivo, utilizaremos
-# todas as features no modelo de classificação, evitando descartar informações
-# que, quando analisadas em conjunto, podem contribuir para a classificação.
-
-# 2a -
-
-# O modelo escolhido foi a Regressão Logística (LogisticRegression),
-# disponível na biblioteca scikit-learn.
-#
-# Apesar do nome "regressão", a Regressão Logística é um modelo utilizado
-# para problemas de classificação. Neste projeto, ela será utilizada para
-# classificar os dados nas classes Low, Medium e High de Energy_Class.
-
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import (
+    confusion_matrix,
+    accuracy_score,
+    precision_score,
+    recall_score,
+)
 
-# 2b -
+# 1a - Carregar o CSV em um DataFrame.
+df = pd.read_csv("Renewable_Energy_Data.csv")
+print("\n========== DATAFRAME ORIGINAL ==========")
+print(df)
 
-# A Regressão Logística é considerada um modelo linear porque utiliza uma
-# combinação linear das features para realizar a classificação.
-#
-# Essa combinação pode ser representada por:
-# z = b0 + b1*x1 + b2*x2 + ... + bn*xn
-#
-# A fronteira de decisão (decision boundary) é definida a partir dessa
-# combinação linear e é utilizada para separar as diferentes classes.
-#
-# Portanto, a característica linear do modelo está diretamente relacionada
-# à forma como ele constrói sua fronteira de decisão.
+# 1b - Encoding do target: Low=0, Medium=1, High=2.
+df["Energy_Class"] = df["Energy_Class"].map({"Low": 0, "Medium": 1, "High": 2})
 
-# 2c -
+# Complemento necessário: transformar features categóricas em números.
+# LabelEncoder atribui códigos numéricos às categorias.
+encoder = LabelEncoder()
+df["Region"] = encoder.fit_transform(df["Region"])
+df["Energy_Source"] = encoder.fit_transform(df["Energy_Source"])
+df["Season"] = encoder.fit_transform(df["Season"])
+print("\n========== DATAFRAME CODIFICADO ==========")
+print(df)
 
-# X recebe todas as colunas, menos a coluna que queremos prever
+# 1c - Matriz de correlação linear de Pearson (Aula 07).
+correlacao = df.corr()
+print("\n========== MATRIZ DE CORRELAÇÃO ==========")
+print(correlacao)
+print("\n========== CORRELAÇÃO COM ENERGY_CLASS ==========")
+print(correlacao["Energy_Class"])
+
+# 1d - Escolha das features.
+# A matriz de correlação mostra relações lineares individuais entre as
+# variáveis. Como não há um conjunto pequeno que se destaque claramente,
+# optamos por manter todas as features. Uma correlação baixa isolada não
+# significa necessariamente que uma variável seja inútil quando combinada
+# com outras. Os códigos atribuídos às categorias não representam uma
+# ordem quantitativa real, então suas correlações devem ser interpretadas
+# com cautela.
+
+# 2a - Modelo escolhido: Regressão Logística (Aula 08).
+# É um classificador que pode ser utilizado com múltiplas classes.
+
+# 2b - Por que o modelo é linear?
+# O modelo calcula combinações lineares das features:
+# z = b0 + b1*x1 + b2*x2 + ... + bn*xn.
+# As fronteiras de decisão são lineares no espaço das features utilizadas.
+# Apesar do nome, Regressão Logística é usada para classificação.
+
+# 2c - Separação das features (X) e do target (y).
 X = df.drop("Energy_Class", axis=1)
-
-# y recebe apenas a coluna que queremos prever
 y = df["Energy_Class"]
-
-print("\n==========Features utilizadas (X)==========\n")
+print("\n========== FEATURES (X) ==========")
 print(X)
-
-print("\n==========Target (y)==========\n")
+print("\n========== TARGET (y) ==========")
 print(y)
 
-# 2d -
-
-# Cenário 1 -
-
-# 60% dos dados serão utilizados para treinamento
-# e 40% serão utilizados para teste.
-X_treino_40, X_teste_40, y_treino_40, y_teste_40 = train_test_split(X, y, test_size=0.40, random_state=42)
-
-print("\n==========Cenário 1 - 40% para teste==========\n")
-
-print("Quantidade de dados para treinamento:", len(X_treino_40))
-print("Quantidade de dados para teste:", len(X_teste_40))
-
-# Padronização das features
+# 2d - Cenário 1: 40% para teste, 60% para treinamento.
+# train_test_split é um complemento necessário ao enunciado.
+X_treino_40, X_teste_40, y_treino_40, y_teste_40 = train_test_split(
+    X, y, test_size=0.40, random_state=42, stratify=y
+)
+# StandardScaler padroniza as variáveis; ajustamos apenas com o treino.
 scaler_40 = StandardScaler()
-
-# Aprende a média e o desvio padrão dos dados de treinamento
-# e realiza a padronização
 X_treino_40 = scaler_40.fit_transform(X_treino_40)
-
-# Padroniza os dados de teste utilizando os valores
-# aprendidos nos dados de treinamento
 X_teste_40 = scaler_40.transform(X_teste_40)
-
-# Criação do modelo
 modelo_40 = LogisticRegression(max_iter=1000)
-
-# Treinamento do modelo
 modelo_40.fit(X_treino_40, y_treino_40)
-
-# Realização das previsões
 y_pred_40 = modelo_40.predict(X_teste_40)
+print("\n========== CENÁRIO 1 - 40% PARA TESTE ==========")
+print("Treinamento:", len(X_treino_40), "| Teste:", len(X_teste_40))
+print("Valores reais:", y_teste_40.to_numpy())
+print("Valores previstos:", y_pred_40)
 
-print("\nValores reais:")
-print(y_teste_40.to_numpy())
-
-print("\nValores previstos:")
-print(y_pred_40)
-
-# Cenário 2 -
-
-# 85% dos dados serão utilizados para treinamento
-# e 15% serão utilizados para teste.
-X_treino_15, X_teste_15, y_treino_15, y_teste_15 = train_test_split(X, y, test_size=0.15, random_state=42)
-
-print("\n==========Cenário 2 - 15% para teste==========\n")
-
-print("Quantidade de dados para treinamento:", len(X_treino_15))
-print("Quantidade de dados para teste:", len(X_teste_15))
-
-# Padronização das features
+# 2d - Cenário 2: 15% para teste, 85% para treinamento.
+X_treino_15, X_teste_15, y_treino_15, y_teste_15 = train_test_split(
+    X, y, test_size=0.15, random_state=42, stratify=y
+)
 scaler_15 = StandardScaler()
-
-# Aprende a média e o desvio padrão dos dados de treinamento
-# e realiza a padronização
 X_treino_15 = scaler_15.fit_transform(X_treino_15)
-
-# Padroniza os dados de teste utilizando os valores
-# aprendidos nos dados de treinamento
 X_teste_15 = scaler_15.transform(X_teste_15)
-
-# Criação do modelo
 modelo_15 = LogisticRegression(max_iter=1000)
-
-# Treinamento do modelo
 modelo_15.fit(X_treino_15, y_treino_15)
-
-# Realização das previsões
 y_pred_15 = modelo_15.predict(X_teste_15)
+print("\n========== CENÁRIO 2 - 15% PARA TESTE ==========")
+print("Treinamento:", len(X_treino_15), "| Teste:", len(X_teste_15))
+print("Valores reais:", y_teste_15.to_numpy())
+print("Valores previstos:", y_pred_15)
 
-print("\nValores reais:")
-print(y_teste_15.to_numpy())
-
-print("\nValores previstos:")
-print(y_pred_15)
-
-# 3 -
-from sklearn.metrics import (confusion_matrix, accuracy_score, precision_score, recall_score,)
 
 # 3a -
-
-# A performance do modelo pode ser considerada satisfatória nos dois cenários.
+# A performance do modelo pode ser considerada satisfatória
+# nos dois cenários, pois a acurácia ficou próxima de 80%.
 #
-# No cenário com 40% dos dados para teste, o modelo apresentou acurácia
-# de 73%, precisão de aproximadamente 74.19% e recall de 73%.
-#
-# No cenário com 15% dos dados para teste, o modelo apresentou acurácia
-# de aproximadamente 74.67%, precisão de aproximadamente 75.51%
-# e recall de aproximadamente 74.67%.
-#
-# Portanto, o modelo conseguiu classificar corretamente a maioria dos
-# dados nos dois cenários, apresentando resultados ligeiramente melhores
-# quando foram utilizados 15% dos dados para teste.
+# Entretanto, a acurácia sozinha não é suficiente para avaliar
+# completamente o modelo. Por isso, também utilizamos
+# a matriz de confusão, a precisão e o recall.
 
-# 3b -
-
-# Cenário 1 -
-
-matriz_40 = confusion_matrix(y_teste_40, y_pred_40)
-
-print("\n==========Matriz de Confusão - 40% para teste==========\n")
+# 3b - Matrizes de confusão (Aula 08).
+matriz_40 = confusion_matrix(y_teste_40, y_pred_40, labels=[0, 1, 2])
+matriz_15 = confusion_matrix(y_teste_15, y_pred_15, labels=[0, 1, 2])
+print("\n========== MATRIZ DE CONFUSÃO - 40% ==========")
 print(matriz_40)
-
-# Cenário 2 -
-
-matriz_15 = confusion_matrix(y_teste_15, y_pred_15)
-
-print("\n==========Matriz de Confusão - 15% para teste==========\n")
+print("\n========== MATRIZ DE CONFUSÃO - 15% ==========")
 print(matriz_15)
 
-# 3c -
-
-# Cenário 1 -
-
+# 3c - Acurácia (Aula 08), precisão e recall (complementos necessários).
+# average='weighted' considera a quantidade de exemplos em cada classe.
 acuracia_40 = accuracy_score(y_teste_40, y_pred_40)
-precisao_40 = precision_score(y_teste_40, y_pred_40, average="weighted")
-recall_40 = recall_score(y_teste_40, y_pred_40, average="weighted")
-
-print("\n==========Métricas - 40% para teste==========\n")
-print("Acurácia:", acuracia_40)
-print("Precisão:", precisao_40)
-print("Recall:", recall_40)
-
-# Cenário 2 -
-
+precisao_40 = precision_score(
+    y_teste_40, y_pred_40, average="weighted", zero_division=0
+)
+recall_40 = recall_score(y_teste_40, y_pred_40, average="weighted", zero_division=0)
 acuracia_15 = accuracy_score(y_teste_15, y_pred_15)
-precisao_15 = precision_score(y_teste_15, y_pred_15, average="weighted")
-recall_15 = recall_score(y_teste_15, y_pred_15, average="weighted")
-
-print("\n==========Métricas - 15% para teste==========\n")
-print("Acurácia:", acuracia_15)
-print("Precisão:", precisao_15)
-print("Recall:", recall_15)
+precisao_15 = precision_score(
+    y_teste_15, y_pred_15, average="weighted", zero_division=0
+)
+recall_15 = recall_score(y_teste_15, y_pred_15, average="weighted", zero_division=0)
+print("\n========== MÉTRICAS - 40% ==========")
+print(f"Acurácia: {acuracia_40:.2%}")
+print(f"Precisão: {precisao_40:.2%}")
+print(f"Recall: {recall_40:.2%}")
+print("\n========== MÉTRICAS - 15% ==========")
+print(f"Acurácia: {acuracia_15:.2%}")
+print(f"Precisão: {precisao_15:.2%}")
+print(f"Recall: {recall_15:.2%}")
 
 # 3d -
+# A matriz de confusão permite identificar os acertos e erros
+# de classificação em cada uma das três classes.
+#
+# A acurácia representa a proporção de classificações corretas.
+# A precisão avalia a proporção de previsões corretas entre
+# as previsões realizadas para cada classe.
+# O recall avalia a capacidade de identificar os exemplos
+# que realmente pertencem a cada classe.
+#
+# As métricas permitem comparar o desempenho nos dois cenários.
 
-# Com 40% dos dados para teste, o modelo obteve:
-# Acurácia: 73%
-# Precisão: aproximadamente 74.19%
-# Recall: 73%
-#
-# Com 15% dos dados para teste, o modelo obteve:
-# Acurácia: aproximadamente 74.67%
-# Precisão: aproximadamente 75.51%
-# Recall: aproximadamente 74.67%.
-#
-# A partir desses resultados, podemos observar que o modelo apresentou
-# uma performance satisfatória nos dois cenários.
-#
-# O cenário com 15% para teste apresentou resultados um pouco melhores
-# nas três métricas avaliadas.
-#
-# Nas matrizes de confusão, os valores da diagonal principal representam
-# as classificações corretas e os valores fora da diagonal representam
-# as classificações incorretas.
+print("\n========== ANÁLISE DOS RESULTADOS ==========")
 
-# 3e -
+print(f"Acurácia com 40% para teste: {acuracia_40:.2%}")
+print(f"Acurácia com 15% para teste: {acuracia_15:.2%}")
 
-# Comparando os dois cenários, o conjunto com 15% para teste apresentou
-# resultados ligeiramente melhores que o conjunto com 40% para teste.
-#
-# A acurácia aumentou de 73% para aproximadamente 74.67%.
-# A precisão aumentou de aproximadamente 74.19% para 75.51%.
-# O recall aumentou de 73% para aproximadamente 74.67%.
-#
-# Com 40% para teste, temos uma quantidade maior de dados para avaliar
-# o modelo, o que permite realizar a avaliação sobre uma amostra maior.
-# Entretanto, apenas 60% dos dados ficam disponíveis para treinamento.
-#
-# Com 15% para teste, 85% dos dados ficam disponíveis para treinamento,
-# permitindo que o modelo aprenda utilizando uma quantidade maior de dados.
-# Por outro lado, a avaliação é realizada utilizando uma amostra menor.
-#
-# Neste dataset e nesta divisão específica, utilizar 15% para teste
-# apresentou um desempenho ligeiramente superior.
+print(f"Precisão com 40% para teste: {precisao_40:.2%}")
+print(f"Precisão com 15% para teste: {precisao_15:.2%}")
+
+print(f"Recall com 40% para teste: {recall_40:.2%}")
+print(f"Recall com 15% para teste: {recall_15:.2%}")
+
+# 3e - Comparação dos dois cenários.
+# Com 40% para teste, avaliamos o modelo com mais registros, mas treinamos
+# com apenas 60%. Com 15% para teste, treinamos com 85%, porém a avaliação
+# utiliza menos registros e pode variar mais entre diferentes divisões.
+# Uma diferença pequena não garante que uma divisão seja sempre melhor.
+print("\n========== COMPARAÇÃO ENTRE OS CENÁRIOS ==========")
+print(
+    f"Diferença de acurácia (15% - 40%): {(acuracia_15 - acuracia_40) * 100:.2f} pontos percentuais"
+)
+if acuracia_15 > acuracia_40:
+    print("Nesta divisão, o cenário com 15% para teste teve maior acurácia.")
+elif acuracia_15 < acuracia_40:
+    print("Nesta divisão, o cenário com 40% para teste teve maior acurácia.")
+else:
+    print("Nesta divisão, os dois cenários tiveram a mesma acurácia.")
